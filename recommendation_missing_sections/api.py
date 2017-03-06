@@ -3,7 +3,7 @@ import collections
 import flask_restplus
 from flask_restplus import reqparse
 from flask_restplus import fields
-from recommendaiton.api import helper
+from recommendation.api import helper
 
 api = helper.build_api('missing_sections', __name__, url_prefix='/types/missing_sections')
 v1 = helper.build_namespace(api, 'v1', description='')
