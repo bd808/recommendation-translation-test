@@ -2,7 +2,6 @@ from flask import Flask
 
 from recommendation_missing_sections import api
 from recommendation.utils import logger
-from recommendation.utils import configuration
 
 logger.initialize_logging()
 

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='recommendation_missing_sections',
-    version='0.0.1',
+    version='0.0.2',
     url='https://github.com/schana/recommendation-missing-sections',
     license='Apache Software License',
     maintainer='Wikimedia Research',
@@ -12,7 +12,8 @@ setup(
     packages=find_packages(exclude=['test', 'test.*', '*.test']),
     install_requires=['recommendation',
                       'flask',
-                      'flask-restplus'],
+                      'flask-restplus',
+                      'pymongo'],
     package_data={'recommendation_missing_sections': ['data/*']},
     setup_requires=['pytest-runner'],
     tests_require=['pytest',
