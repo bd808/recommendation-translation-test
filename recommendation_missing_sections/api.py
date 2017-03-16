@@ -44,14 +44,56 @@ class Sections(flask_restplus.Resource):
     @v1.doc(**sections_doc)
     def get(self):
         kwargs = sections_params.parse_args()
-        return recommend(**kwargs)
+        return recommend_sections(**kwargs)
 
 
-def recommend(categories=None, sections=None):
+def recommend_sections(categories=None, sections=None):
     results = set()
     if categories is not None:
-        for category in categories:
-            results.update(dal.get_sections_by_category(category))
+        results.update(dal.get_sections_by_categories(categories))
     if sections is not None:
         results.update(dal.get_section_by_sections(sections))
     return [{'name': result} for result in results]
+
+
+ArticleSpec = collections.namedtuple('Article', ['title', 'sections'])
+
+articles_params = reqparse.RequestParser()
+
+articles_params.add_argument(
+    'seed',
+    type=str,
+    required=False
+)
+
+articles_model = v1.model(ArticleSpec.__name__, ArticleSpec(
+    title=fields.String(description='title', required=True),
+    sections=fields.List(fields.String, description='sections', required=True)
+)._asdict())
+
+articles_doc = dict(description='Gets recommendations for articles that have missing sections',
+                    params=dict(seed='Seed for finding articles'))
+
+
+@v1.route('/articles')
+class Articles(flask_restplus.Resource):
+    @v1.expect(articles_params)
+    @v1.marshal_with(articles_model, as_list=True)
+    @v1.doc(**articles_doc)
+    def get(self):
+        kwargs = articles_params.parse_args()
+        return recommend_articles(**kwargs)
+
+
+def recommend_articles(seed=None):
+    articles = []
+    candidates = dal.get_articles_to_expand()
+    for candidate in candidates:
+        categories = ['Category:{}'.format(category.replace(' ', '_')) for category in candidate['categories']]
+        sections = recommend_sections(categories=categories)[:12]
+        if sections:
+            articles.append(ArticleSpec(
+                title=candidate['title'],
+                sections=[section['name'] for section in sections]
+            )._asdict())
+    return articles

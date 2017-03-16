@@ -1,5 +1,4 @@
 import itertools
-import json
 
 import pymongo
 
@@ -21,9 +20,26 @@ def _get_db():
     return _db
 
 
-def get_sections_by_category(category):
-    results = _get_db().category_to_sections.find({'category': category})
-    sections = set(itertools.chain(*[result['template'] for result in results]))
+def get_sections_by_categories(categories):
+    pipeline = [
+        {'$match': {'category': {'$in': categories}}},
+        {'$group': {
+            '_id': '$category',
+            'sections': {
+                '$push': '$template'
+            }
+        }},
+        {'$unwind': '$sections'},
+        {'$unwind': '$sections'},
+        {'$group': {
+            '_id': '$_id',
+            'sections': {
+                '$addToSet': '$sections'
+            }
+        }}
+    ]
+    results = _get_db().category_to_sections.aggregate(pipeline)
+    sections = set(itertools.chain(*[result['sections'] for result in results]))
     return sections
 
 
@@ -33,7 +49,10 @@ def get_section_by_sections(sections):
     sections = set()
     for result in results:
         sections.update(result['missing'])
-        print(sections)
     return sections
-    sections = set(itertools.chain(*[result['missing'] for result in results]))
-    return sections
+
+
+def get_articles_to_expand():
+    pipeline = [{'$sample': {'size': 24}}]
+    results = _get_db().title_to_stub.aggregate(pipeline)
+    return results
