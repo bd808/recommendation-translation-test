@@ -6,6 +6,7 @@ from flask_restplus import fields
 from recommendation.api import helper
 
 from recommendation_missing_sections import dal
+from recommendation_missing_sections import wikipedia
 
 api = helper.build_api('missing_sections', __name__, url_prefix='/types/missing_sections')
 v1 = helper.build_namespace(api, 'v1', description='')
@@ -52,7 +53,7 @@ def recommend_sections(categories=None, sections=None):
     if categories is not None:
         results.update(dal.get_sections_by_categories(categories))
     if sections is not None:
-        results.update(dal.get_section_by_sections(sections))
+        results.update(dal.get_sections_by_sections(sections))
     return [{'name': result} for result in results]
 
 
@@ -87,13 +88,18 @@ class Articles(flask_restplus.Resource):
 
 def recommend_articles(seed=None):
     articles = []
-    candidates = dal.get_articles_to_expand()
+    candidates = list(dal.get_articles_to_expand())
+    existing_sections_by_title = wikipedia.get_sections_for_articles([candidate['title'] for candidate in candidates])
     for candidate in candidates:
+        existing_sections = set(existing_sections_by_title[candidate['title']])
         categories = ['Category:{}'.format(category.replace(' ', '_')) for category in candidate['categories']]
-        sections = recommend_sections(categories=categories)[:12]
+        sections = dal.get_sections_by_sections(existing_sections)
+        sections.update(dal.get_sections_by_categories(categories))
         if sections:
-            articles.append(ArticleSpec(
-                title=candidate['title'],
-                sections=[section['name'] for section in sections]
-            )._asdict())
+            missing_sections = sections - existing_sections
+            if missing_sections:
+                articles.append(ArticleSpec(
+                    title=candidate['title'],
+                    sections=list(missing_sections)[:12]
+                )._asdict())
     return articles

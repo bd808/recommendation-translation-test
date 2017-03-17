@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='recommendation_missing_sections',
-    version='0.0.3',
+    version='0.0.4',
     url='https://github.com/schana/recommendation-missing-sections',
     license='Apache Software License',
     maintainer='Wikimedia Research',

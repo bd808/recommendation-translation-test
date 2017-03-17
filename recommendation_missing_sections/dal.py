@@ -43,13 +43,17 @@ def get_sections_by_categories(categories):
     return sections
 
 
-def get_section_by_sections(sections):
-    query = {'current': {'$all': sections[:2]}}
-    results = _get_db().sections_to_section.find(filter=query, sort=[('confidence', -1)], limit=100)
-    sections = set()
-    for result in results:
-        sections.update(result['missing'])
-    return sections
+def get_sections_by_sections(sections):
+    sections -= {'REFERENCES', 'EXTERNAL LINKS', 'SEE ALSO'}
+    if sections and len(sections) < 9:
+        query = {'current': list(sections), 'confidence': {'$gte': 0.9}}
+        results = _get_db().sections_to_section.find(filter=query, sort=[('confidence', -1)], limit=100)
+        sections = set()
+        for result in results:
+            sections.update(result['missing'])
+        return sections
+    else:
+        return set()
 
 
 def get_articles_to_expand():
