@@ -1,0 +1,27 @@
+create temporary table temp (data json);
+\copy temp from './AR.json';
+
+drop table if exists sections_to_section;
+
+create table sections_to_section (
+  current text[],
+  missing text[],
+  confidence decimal
+);
+
+insert into sections_to_section (current, missing, confidence)
+select
+  array(select json_array_elements_text(data->'current') as s order by s) as current,
+  array(select json_array_elements_text(data->'missing') as s order by s) as missing,
+  cast(data->>'confidence' as decimal) as confidence
+from (
+  select data from temp
+) a;
+
+-- TODO: create index on 'current'
+--       options: hash (but which algorithm? default? pgcrypto?)
+--                GIN
+--                b-tree
+create index on sections_to_section using hash (current);
+--create index on sections_to_section using gin (current);
+--create index on sections_to_section (current);
