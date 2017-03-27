@@ -1,5 +1,5 @@
 create temporary table temp (data json);
-\copy temp from './AR.json';
+\copy temp from './AR.json' csv quote e'\x01' delimiter e'\x02';
 
 drop table if exists sections_to_section;
 
@@ -23,5 +23,5 @@ from (
 --                GIN
 --                b-tree
 create index on sections_to_section using hash (current);
---create index on sections_to_section using gin (current);
---create index on sections_to_section (current);
+create index on sections_to_section using gin (current);
+create index on sections_to_section (current);

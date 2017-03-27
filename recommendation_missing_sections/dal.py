@@ -1,62 +1,50 @@
 import itertools
 
-import pymongo
+import psycopg2
 
-_client = None
-_db = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        _client = pymongo.MongoClient('localhost', 27017)
-    return _client
+_connection = None
 
 
-def _get_db():
-    global _db
-    if _db is None:
-        _db = _get_client().test
-    return _db
+def _get_connection():
+    global _connection
+    if _connection is None or _connection.closed != 0:
+        _connection = psycopg2.connect('dbname=test user=www-data')
+    return _connection
 
 
 def get_sections_by_categories(categories):
-    pipeline = [
-        {'$match': {'category': {'$in': categories}}},
-        {'$group': {
-            '_id': '$category',
-            'sections': {
-                '$push': '$template'
-            }
-        }},
-        {'$unwind': '$sections'},
-        {'$unwind': '$sections'},
-        {'$group': {
-            '_id': '$_id',
-            'sections': {
-                '$addToSet': '$sections'
-            }
-        }}
-    ]
-    results = _get_db().category_to_sections.aggregate(pipeline)
-    sections = set(itertools.chain(*[result['sections'] for result in results]))
+    sql = 'select template from category_to_sections where category = any(%s);'
+
+    with _get_connection().cursor() as cursor:
+        cursor.execute(sql, categories)
+        results = cursor.fetchall()
+
+    sections = set(itertools.chain(*[result[0] for result in results]))
     return sections
 
 
 def get_sections_by_sections(sections):
+    sql = '''
+    select missing from sections_to_section where
+      current = (select array(select unnest(%s) as s order by s))
+      and confidence >= 0.9
+    order by confidence;
+    '''
+
     sections -= {'REFERENCES', 'EXTERNAL LINKS', 'SEE ALSO'}
-    if sections and len(sections) < 9:
-        query = {'current': list(sections), 'confidence': {'$gte': 0.9}}
-        results = _get_db().sections_to_section.find(filter=query, sort=[('confidence', -1)], limit=100)
-        sections = set()
-        for result in results:
-            sections.update(result['missing'])
+    if sections:
+        with _get_connection().cursor() as cursor:
+            cursor.execute(sql, list(sections))
+            results = cursor.fetchall()
+        sections = set(itertools.chain(*[result[0] for result in results]))
         return sections
     else:
         return set()
 
 
 def get_articles_to_expand():
-    pipeline = [{'$sample': {'size': 24}}]
-    results = _get_db().title_to_stub.aggregate(pipeline)
+    sql = 'select * from title_to_stub limit 24;'
+    with _get_connection().cursor() as cursor:
+        cursor.execute(sql)
+        results = cursor.fetchall()
     return results
