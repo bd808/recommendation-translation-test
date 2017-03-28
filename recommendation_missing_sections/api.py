@@ -4,6 +4,7 @@ import flask_restplus
 from flask_restplus import reqparse
 from flask_restplus import fields
 from recommendation.api import helper
+from recommendation.api.types.translation import candidate_finders
 
 from recommendation_missing_sections import dal
 from recommendation_missing_sections import wikipedia
@@ -88,18 +89,35 @@ class Articles(flask_restplus.Resource):
 
 def recommend_articles(seed=None):
     articles = []
-    candidates = list(dal.get_articles_to_expand())
-    existing_sections_by_title = wikipedia.get_sections_for_articles([candidate['title'] for candidate in candidates])
-    for candidate in candidates:
-        existing_sections = set(existing_sections_by_title[candidate['title']])
-        categories = ['Category:{}'.format(category.replace(' ', '_')) for category in candidate['categories']]
-        sections = dal.get_sections_by_sections(existing_sections)
-        sections.update(dal.get_sections_by_categories(categories))
-        if sections:
-            missing_sections = sections - existing_sections
-            if missing_sections:
-                articles.append(ArticleSpec(
-                    title=candidate['title'],
-                    sections=list(missing_sections)[:12]
-                )._asdict())
+    if seed is not None:
+        candidates = candidate_finders.get_morelike_candidates('en', seed, 24)
+        existing_sections_by_title = wikipedia.get_sections_for_articles([candidate.title for candidate in candidates])
+        existing_categories_by_title = wikipedia.get_categories_for_articles([candidate.title for candidate in candidates])
+        for candidate in candidates:
+            existing_sections = set(existing_sections_by_title[candidate.title])
+            categories = [c.replace(' ', '_') for c in existing_categories_by_title[candidate.title]]
+            sections = dal.get_sections_by_sections(existing_sections)
+            sections.update(dal.get_sections_by_categories(categories))
+            if sections:
+                missing_sections = sections - existing_sections
+                if missing_sections:
+                    articles.append(ArticleSpec(
+                        title=candidate.title,
+                        sections=list(missing_sections)[:12]
+                    )._asdict())
+    else:
+        candidates = list(dal.get_articles_to_expand())
+        existing_sections_by_title = wikipedia.get_sections_for_articles([candidate['title'] for candidate in candidates])
+        for candidate in candidates:
+            existing_sections = set(existing_sections_by_title[candidate['title']])
+            categories = ['Category:{}'.format(category.replace(' ', '_')) for category in candidate['categories']]
+            sections = dal.get_sections_by_sections(existing_sections)
+            sections.update(dal.get_sections_by_categories(categories))
+            if sections:
+                missing_sections = sections - existing_sections
+                if missing_sections:
+                    articles.append(ArticleSpec(
+                        title=candidate['title'],
+                        sections=list(missing_sections)[:12]
+                    )._asdict())
     return articles
