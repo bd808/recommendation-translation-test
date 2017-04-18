@@ -1,4 +1,5 @@
 import collections
+import random
 
 import flask_restplus
 from flask_restplus import reqparse
@@ -89,35 +90,30 @@ class Articles(flask_restplus.Resource):
 
 def recommend_articles(seed=None):
     articles = []
+
     if seed is not None:
         candidates = candidate_finders.get_morelike_candidates('en', seed, 24)
-        existing_sections_by_title = wikipedia.get_sections_for_articles([candidate.title for candidate in candidates])
-        existing_categories_by_title = wikipedia.get_categories_for_articles([candidate.title for candidate in candidates])
-        for candidate in candidates:
-            existing_sections = set(existing_sections_by_title[candidate.title])
-            categories = [c.replace(' ', '_') for c in existing_categories_by_title[candidate.title]]
-            sections = dal.get_sections_by_sections(existing_sections)
-            sections.update(dal.get_sections_by_categories(categories))
-            if sections:
-                missing_sections = sections - existing_sections
-                if missing_sections:
-                    articles.append(ArticleSpec(
-                        title=candidate.title,
-                        sections=list(missing_sections)[:12]
-                    )._asdict())
+        titles = [candidate.title for candidate in candidates]
     else:
         candidates = list(dal.get_articles_to_expand())
-        existing_sections_by_title = wikipedia.get_sections_for_articles([candidate['title'] for candidate in candidates])
-        for candidate in candidates:
-            existing_sections = set(existing_sections_by_title[candidate['title']])
-            categories = ['Category:{}'.format(category.replace(' ', '_')) for category in candidate['categories']]
-            sections = dal.get_sections_by_sections(existing_sections)
-            sections.update(dal.get_sections_by_categories(categories))
-            if sections:
-                missing_sections = sections - existing_sections
-                if missing_sections:
-                    articles.append(ArticleSpec(
-                        title=candidate['title'],
-                        sections=list(missing_sections)[:12]
-                    )._asdict())
+        titles = [candidate['title'] for candidate in candidates]
+
+    existing_categories_by_title = wikipedia.get_sections_for_articles(titles)
+    categories_by_title = wikipedia.get_categories_for_articles(titles)
+
+    for title in titles:
+        existing_sections = set(existing_categories_by_title[title])
+        categories = categories_by_title[title]
+        recommended_sections = dal.get_sections_by_sections(existing_sections)
+        recommended_sections.update(dal.get_sections_by_categories(categories))
+
+        if recommended_sections:
+            missing_sections = list(recommended_sections - existing_sections)
+            random.shuffle(missing_sections)
+            if missing_sections:
+                articles.append(ArticleSpec(
+                    title=title,
+                    sections=missing_sections[:12]
+                )._asdict())
+
     return articles

@@ -52,5 +52,5 @@ def get_categories_for_article(title):
     items = list(result.get('query', {}).get('pages', {}).values())
     if len(items) != 1:
         return {title: []}
-    categories = {title: [item['title'] for item in items[0].get('categories', []) if 'title' in item]}
+    categories = {title: [item['title'].replace(' ', '_') for item in items[0].get('categories', []) if 'title' in item]}
     return categories

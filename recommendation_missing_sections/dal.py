@@ -30,9 +30,11 @@ def get_sections_by_sections(sections):
       and confidence >= 0.9
     order by confidence;
     '''
+    sections = set(sections)
+    sections -= {'REFERENCES', 'EXTERNAL LINKS', 'SEE ALSO'}
     if sections:
         with _get_connection().cursor() as cursor:
-            cursor.execute(sql, (sections,))
+            cursor.execute(sql, (list(sections),))
             results = cursor.fetchall()
         sections = set(itertools.chain(*[result[0] for result in results]))
         return sections
