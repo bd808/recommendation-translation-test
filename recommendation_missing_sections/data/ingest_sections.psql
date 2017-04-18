@@ -20,8 +20,8 @@ from (
 
 -- TODO: create index on 'current'
 --       options: hash (but which algorithm? default? pgcrypto?)
---                GIN
+--                GIN - good for contains queries
 --                b-tree
-create index on sections_to_section using hash (current);
+-- create index on sections_to_section using hash (current);
 create index on sections_to_section using gin (current);
-create index on sections_to_section (current);
+-- create index on sections_to_section (current);

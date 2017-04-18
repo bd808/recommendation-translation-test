@@ -26,15 +26,13 @@ def get_sections_by_categories(categories):
 def get_sections_by_sections(sections):
     sql = '''
     select missing from sections_to_section where
-      current = (select array(select unnest(%s) as s order by s))
+      current <@ (select array(select unnest(%s) as s order by s))
       and confidence >= 0.9
     order by confidence;
     '''
-    sections = set(sections)
-    sections -= {'REFERENCES', 'EXTERNAL LINKS', 'SEE ALSO'}
     if sections:
         with _get_connection().cursor() as cursor:
-            cursor.execute(sql, (list(sections),))
+            cursor.execute(sql, (sections,))
             results = cursor.fetchall()
         sections = set(itertools.chain(*[result[0] for result in results]))
         return sections
@@ -47,6 +45,7 @@ def get_articles_to_expand():
     select categories, title from title_to_stub
       tablesample BERNOULLI(0.005)
       where stub=true and array_length(categories, 1) > 0
+      order by random()
       limit 24;
     '''
     with _get_connection().cursor() as cursor:
