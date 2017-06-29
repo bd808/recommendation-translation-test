@@ -1,6 +1,6 @@
 from flask import Flask
 
-from recommendation_missing_sections import api
+from recommendation_translation_test import api
 from recommendation.utils import logger
 
 logger.initialize_logging()
