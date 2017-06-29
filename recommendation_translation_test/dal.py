@@ -13,10 +13,13 @@ def _get_connection():
 
 def get_items(target):
     target_name = sql.Identifier('{}wiki'.format(target))
-    query = 'select id, {0} as prediction from predictions order by {0} desc;'
+    query = 'select id, {0} as prediction from predictions where {0} is not null order by {0} desc;'
 
     with _get_connection().cursor() as cursor:
-        cursor.execute(sql.SQL(query).format(target_name))
-        results = cursor.fetchall()
+        try:
+            cursor.execute(sql.SQL(query).format(target_name))
+            results = cursor.fetchall()
+        except psycopg2.Error:
+            return []
 
     return [{'id': result[0], 'prediction': result[1]} for result in results]
