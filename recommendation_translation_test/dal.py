@@ -19,4 +19,4 @@ def get_items(target):
         cursor.execute(sql.SQL(query).format(target_name))
         results = cursor.fetchall()
 
-    return [{'id': result[0], 'title': result[1]} for result in results]
+    return [{'id': result[0], 'prediction': result[1]} for result in results]
