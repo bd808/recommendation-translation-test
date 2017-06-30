@@ -21,6 +21,7 @@ def get_items(source, target, count):
             cursor.execute(sql.SQL(query).format(target_name, source_name, sql.Literal(count)))
             results = cursor.fetchall()
         except psycopg2.Error as e:
+            cursor.close()
             print(e)
             return []
 
