@@ -20,7 +20,8 @@ def get_items(source, target, count):
         try:
             cursor.execute(sql.SQL(query).format(target_name, source_name, sql.Literal(count)))
             results = cursor.fetchall()
-        except psycopg2.Error:
+        except psycopg2.Error as e:
+            print(e)
             return []
 
     return [{'id': result[0], 'prediction': result[1]} for result in results]
