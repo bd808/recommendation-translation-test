@@ -60,5 +60,6 @@ def recommend_items(source, target, count):
     wikidata_items = wikidata.get_titles_from_wikidata_items(source, items_map.keys())
     for item in wikidata_items:
         items_map[item.id]['title'] = item.title
-    return [
-        dict(title=item.title, prediction=item.prediction, id=wikidata_id) for wikidata_id, item in items_map.items()]
+    return [dict(title=item['title'],
+                 prediction=item['prediction'],
+                 id=wikidata_id) for wikidata_id, item in items_map.items()]
