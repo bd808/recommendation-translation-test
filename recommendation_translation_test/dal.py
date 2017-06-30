@@ -8,6 +8,7 @@ def _get_connection():
     global _connection
     if _connection is None or _connection.closed != 0:
         _connection = psycopg2.connect(dbname='test', user='testing', password='testing', host='localhost')
+        _connection.autocommit = True
     return _connection
 
 
