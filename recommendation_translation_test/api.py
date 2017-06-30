@@ -55,11 +55,11 @@ class Items(flask_restplus.Resource):
 
 
 def recommend_items(source, target, count):
-    items = dal.get_items(target, count)
+    items = dal.get_items(source, target, count)
     items_map = {item['id']: {'prediction': item['prediction']} for item in items}
     wikidata_items = wikidata.get_titles_from_wikidata_items(source, items_map.keys())
     for item in wikidata_items:
         items_map[item.id]['title'] = item.title
-    return [dict(title=item['title'],
-                 prediction=item['prediction'],
-                 id=wikidata_id) for wikidata_id, item in items_map.items() if 'title' in item]
+    return sorted([dict(title=item['title'], prediction=item['prediction'], id=wikidata_id)
+                  for wikidata_id, item in items_map.items() if 'title' in item],
+                  key=lambda item: item['prediction'], reverse=True)
