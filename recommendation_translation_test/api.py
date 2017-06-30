@@ -62,4 +62,4 @@ def recommend_items(source, target, count):
         items_map[item.id]['title'] = item.title
     return [dict(title=item['title'],
                  prediction=item['prediction'],
-                 id=wikidata_id) for wikidata_id, item in items_map.items()]
+                 id=wikidata_id) for wikidata_id, item in items_map.items() if 'title' in item]
