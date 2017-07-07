@@ -5,6 +5,7 @@ from flask_restplus import reqparse
 from flask_restplus import fields
 from flask_restplus import inputs
 from recommendation.api import helper
+from recommendation.api.types.translation import candidate_finders
 from recommendation.api.external_data import wikidata
 
 from recommendation_translation_test import dal
@@ -25,6 +26,11 @@ item_params.add_argument(
     'target',
     type=str,
     required=True
+)
+item_params.add_argument(
+    'seed',
+    type=str,
+    required=False
 )
 item_params.add_argument(
     'count',
@@ -54,8 +60,13 @@ class Items(flask_restplus.Resource):
         return recommend_items(**kwargs)
 
 
-def recommend_items(source, target, count):
-    items = dal.get_items(source, target, count)
+def recommend_items(source, target, seed, count):
+    if seed:
+        candidates = candidate_finders.get_morelike_candidates(source, seed, 500)
+        items = dal.sort_items(source, target, [item.id for item in wikidata.get_wikidata_items_from_titles(
+            source, [candidate.title for candidate in candidates])], count)
+    else:
+        items = dal.get_items(source, target, count)
     items_map = {item['id']: {'prediction': item['prediction']} for item in items}
     wikidata_items = wikidata.get_titles_from_wikidata_items(source, items_map.keys())
     for item in wikidata_items:

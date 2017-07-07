@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='recommendation_translation_test',
-    version='0.0.1',
+    version='0.0.2',
     url='https://github.com/schana/recommendation-translation-test',
     license='Apache Software License',
     maintainer='Wikimedia Research',

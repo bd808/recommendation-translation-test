@@ -13,13 +13,43 @@ def _get_connection():
 
 
 def get_items(source, target, count):
-    target_name = sql.Identifier('{}wiki'.format(target))
-    source_name = sql.Identifier('{}wiki'.format(source))
-    query = 'select id, {0} as prediction from predictions where {0} is not null and {1} is null order by {0} desc limit {2};'
+    query = sql.SQL((
+        'select id, {target} as prediction from predictions'
+        ' where {target} is not null'
+        ' and {source} is null'
+        ' order by {target} desc'
+        ' limit {count};')).format(
+        target=sql.Identifier('{}wiki'.format(target)),
+        source=sql.Identifier('{}wiki'.format(source)),
+        count=sql.Literal(count))
 
     with _get_connection().cursor() as cursor:
         try:
-            cursor.execute(sql.SQL(query).format(target_name, source_name, sql.Literal(count)))
+            cursor.execute(query)
+            results = cursor.fetchall()
+        except psycopg2.Error as e:
+            cursor.close()
+            print(e)
+            return []
+
+    return [{'id': result[0], 'prediction': result[1]} for result in results]
+
+
+def sort_items(source, target, items, count):
+    query = sql.SQL((
+        'select id, {target} as prediction from predictions'
+        ' where id in %s'
+        ' and {target} is not null'
+        ' and {source} is null'
+        ' order by {target} desc'
+        ' limit {count};')).format(
+        target=sql.Identifier('{}wiki'.format(target)),
+        source=sql.Identifier('{}wiki'.format(source)),
+        count=sql.Literal(count))
+
+    with _get_connection().cursor() as cursor:
+        try:
+            cursor.execute(query, [tuple(items)])
             results = cursor.fetchall()
         except psycopg2.Error as e:
             cursor.close()
